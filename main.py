@@ -1,6 +1,5 @@
-import time
-import utils
+from utils import *
 
-utils.iniciar_partida()
-
-time.sleep(2)
+print("¡Bienvenido a Hundir la Flota!")
+time.sleep(1)
+iniciar_partida()

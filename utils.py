@@ -3,32 +3,26 @@ import random
 import time
 
 def crear_tablero(tamaño):
-    tablero = np.full((tamaño,tamaño), "_")
-    return tablero
-
+    return np.full((tamaño, tamaño), "_")
 
 def crear_barco(eslora):
-    casilla_0 = (random.randint(0,9), random.randint(0,9))
+    casilla_0 = (random.randint(0, 9), random.randint(0, 9))
     orientacion = random.choice(["Vertical", "Horizontal"])
 
     barco = [casilla_0]
     casilla = casilla_0
     while len(barco) < eslora:
         if orientacion == "Vertical":
-            casilla = (casilla[0]+1, casilla[1])
-            barco.append(casilla) # Vertical
+            casilla = (casilla[0] + 1, casilla[1])
         else:
-            casilla = (casilla[0], casilla[1]+1)
-            barco.append(casilla) # Horizontal
+            casilla = (casilla[0], casilla[1] + 1)
+        barco.append(casilla)
 
     return barco
 
 def colocacion_valida(barco, tablero):
     for casilla in barco:
-        if casilla[0] > 9 or casilla[1] > 9:
-            return False
-        
-        if tablero[casilla] != "_":
+        if casilla[0] > 9 or casilla[1] > 9 or tablero[casilla] != "_":
             return False
     return True
 
@@ -37,113 +31,101 @@ def colocar_barco(barco, tablero):
         tablero[casilla] = "O"
     return tablero
 
-def disparar(tablero):
+def disparar(tablero_oculto, tablero_real):
+    x = int(input("¿A qué fila disparas? (0-9): "))
+    y = int(input("¿A qué columna disparas? (0-9): "))
 
-    x = int((input("¿A qué fila disparas?")))
-    y = int((input("¿A qué columna disparas?")))
+    casilla = (x, y)
 
-    casilla = (x,y)
+    if tablero_real[casilla] == "O":
+        print("¡Tocado!")
+        tablero_oculto[casilla] = "X"
+        tablero_real[casilla] = "X"
+    elif tablero_oculto[casilla] not in ["X", "A"]:
+        print("¡Agua!")
+        tablero_oculto[casilla] = "A"
 
-    if tablero[casilla] == "O":
-        print("Tocado")
-        tablero[casilla] = "X"
-    else:
-        print("Agua")
-        tablero[casilla] = "A"
-    return tablero
+    return tablero_oculto, tablero_real
 
-def disparar_maquina(tablero):
+def disparar_maquina(tablero_jugador):
+    x, y = random.randint(0, 9), random.randint(0, 9)
+    casilla = (x, y)
 
-    x = random.randint(0,9)
-    y = random.randint(0,9)
+    print(f"La máquina dispara a la casilla {casilla}")
 
-    casilla = (x,y)
+    if tablero_jugador[casilla] == "O":
+        print("¡La máquina tocó un barco!")
+        tablero_jugador[casilla] = "X"
+    elif tablero_jugador[casilla] not in ["X", "A"]:
+        print("¡La máquina falló!")
+        tablero_jugador[casilla] = "A"
 
-    if [casilla] == "O":
-        print("Tocado")
-        tablero[casilla] = "X"
-    else:
-        print("Agua")
-        tablero[casilla] = "A"
-    return tablero
-
-def turnos(tablero_jugador, tablero_maquina):
-
-    turno = (input("¿Quién tiene el primer turno? J(jugador) o M(máquina)?")).lower()
-
-    while not verificar_victoria(tablero_jugador) and not verificar_victoria(tablero_maquina):
-        if turno == "j":
-            print("Dispara el jugador...")
-            tablero_jugador = disparar(tablero_jugador)
-
-            if verificar_victoria(tablero_maquina):
-                    return "¡El jugador gana!"
-            
-            turno = "m"
-
-            return tablero_maquina
-
-        elif turno == "m":
-            print("Dispara la máquina...")
-            
-            time.sleep(2)
-
-            tablero_maquina = disparar_maquina(tablero_maquina)
-
-            if verificar_victoria(tablero_jugador):
-                    return "La máquina gana"
-
-            time.sleep(2)
-            
-            turno = "j"
-
-            return print(tablero_jugador)
-
-        else:
-            print("Turno inválido")
-            return turnos(tablero_jugador, tablero_maquina)
+    return tablero_jugador
 
 def verificar_victoria(tablero):
+    """Verifica si quedan barcos en el tablero."""
     return not np.any(tablero == "O")
 
 def colocar_barcos(tablero):
     dict_barcos = {}
-    esloras = [2, 2, 2, 3, 3, 4]  
-    
+    esloras = [2, 2, 2, 3, 3, 4]
+
     for i, eslora in enumerate(esloras):
         barco = crear_barco(eslora)
         while not colocacion_valida(barco, tablero):
-            barco = crear_barco(eslora)  
-        
-        dict_barcos[f'b{i+1}'] = barco  
-        colocar_barco(barco, tablero) 
-    
+            barco = crear_barco(eslora)
+
+        dict_barcos[f'b{i + 1}'] = barco
+        colocar_barco(barco, tablero)
+
     return dict_barcos, tablero
 
 def iniciar_partida():
     
     tablero_jugador = crear_tablero(10)
-    tablero_maquina = crear_tablero(10)
+    tablero_maquina_real = crear_tablero(10)
+    tablero_maquina_oculto = crear_tablero(10)
 
     colocar_barcos(tablero_jugador)
-    colocar_barcos(tablero_maquina)
+    colocar_barcos(tablero_maquina_real)
 
-    print("TABLERO JUGADOR:")
-    
-    
-    print(tablero_jugador)
-    
-    print("************************************************")
-    
-    time.sleep(2)
-    
-    print("TABLERO MÁQUINA:")
+    turnos(tablero_jugador, tablero_maquina_real, tablero_maquina_oculto)
 
-    time.sleep(2)
-    
-    print(tablero_maquina)
+def turnos(tablero_jugador, tablero_maquina_real, tablero_maquina_oculto):
+    turno = input("¿Quién tiene el primer turno? J (jugador) o M (máquina): ").lower()
 
-    
+    while not verificar_victoria(tablero_jugador) and not verificar_victoria(tablero_maquina_real):
+        if turno == "j":
+            print("\n=== Tu turno ===")
+            print("\nTu tablero:")
+            print(tablero_jugador)
+            print("\nTablero de la máquina (disparos):")
+            print(tablero_maquina_oculto)
 
-    turnos(tablero_jugador, tablero_maquina)
+            tablero_maquina_oculto, tablero_maquina_real = disparar(tablero_maquina_oculto, tablero_maquina_real)
 
+            if verificar_victoria(tablero_maquina_real):
+                print("\n¡Felicidades, has ganado! ¡Todos los barcos de la máquina han sido hundidos!")
+                return
+
+            turno = "m"
+
+        elif turno == "m":
+            print("\n=== Turno de la máquina ===")
+            time.sleep(2)
+            tablero_jugador = disparar_maquina(tablero_jugador)
+
+            print("\nTu tablero actualizado:")
+            print(tablero_jugador)
+
+            if verificar_victoria(tablero_jugador):
+                print("\n¡La máquina gana! ¡Todos tus barcos han sido hundidos!")
+                return
+
+            turno = "j"
+
+        else:
+            print("Turno inválido, por favor ingresa 'J' o 'M'.")
+            turno = input("¿Quién tiene el primer turno? J (jugador) o M (máquina): ").lower()
+
+    print("\n¡Fin del juego!")
